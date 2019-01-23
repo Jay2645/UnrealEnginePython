@@ -287,7 +287,8 @@ public class UnrealEnginePython : ModuleRules
     {
         // insert the PYTHONHOME content as the first known path
         List<string> paths = new List<string>(knownPaths);
-        paths.Insert(0, Path.Combine(ModuleDirectory, "../../Binaries", binaryPath));
+		string moduleParent = Directory.GetParent(Directory.GetParent(Directory.GetParent(Directory.GetParent(ModuleDirectory).ToString()).ToString()).ToString()).ToString();
+		paths.Insert(0, Path.Combine(moduleParent, "Binaries", binaryPath));
         string environmentPath = System.Environment.GetEnvironmentVariable("PYTHONHOME");
         if (!string.IsNullOrEmpty(environmentPath))
             paths.Insert(0, environmentPath);
@@ -301,18 +302,19 @@ public class UnrealEnginePython : ModuleRules
         {
             string actualPath = path;
 
-            if (IsPathRelative(actualPath))
+			if (IsPathRelative(actualPath))
             {
                 actualPath = Path.GetFullPath(Path.Combine(ModuleDirectory, actualPath));
             }
 
             string headerFile = Path.Combine(actualPath, "include", "Python.h");
-            if (File.Exists(headerFile))
+
+			if (File.Exists(headerFile))
             {
-                return actualPath;
+				return actualPath;
             }
-            // this is mainly useful for OSX
-            headerFile = Path.Combine(actualPath, "Headers", "Python.h");
+			// this is mainly useful for OSX
+			headerFile = Path.Combine(actualPath, "Headers", "Python.h");
             if (File.Exists(headerFile))
             {
                 return actualPath;
