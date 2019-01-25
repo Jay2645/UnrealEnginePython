@@ -227,7 +227,11 @@ public class UnrealEnginePython : ModuleRules
 			System.Console.WriteLine("Using Python libraries: " + libPath);
 			PublicLibraryPaths.Add(Path.GetDirectoryName(libPath));
 			PublicAdditionalLibraries.Add(libPath);
-			RuntimeDependencies.Add(new RuntimeDependency(Path.Combine(pythonHome, Path.GetFileNameWithoutExtension(libPath) + ".dll")));
+
+			string pluginDLLPath = Path.Combine(pythonHome, Path.GetFileNameWithoutExtension(libPath) + ".dll");
+			string binariesPath = CopyToProjectBinaries(pluginDLLPath, Target);
+			System.Console.WriteLine("Using Python DLL: " + binariesPath);
+			RuntimeDependencies.Add(binariesPath);
 		}
 		else if (Target.Platform == UnrealTargetPlatform.Mac)
 		{
@@ -300,8 +304,7 @@ public class UnrealEnginePython : ModuleRules
 	{
 		// insert the PYTHONHOME content as the first known path
 		List<string> paths = new List<string>(knownPaths);
-		string moduleParent = Directory.GetParent(Directory.GetParent(Directory.GetParent(Directory.GetParent(ModuleDirectory).ToString()).ToString()).ToString()).ToString();
-		paths.Insert(0, Path.Combine(moduleParent, "Binaries", binaryPath));
+		paths.Insert(0, Path.Combine(Directory.GetParent(Directory.GetParent(ModuleDirectory).ToString()).ToString(), "ThirdParty", binaryPath));
 		string environmentPath = System.Environment.GetEnvironmentVariable("PYTHONHOME");
 		if (!string.IsNullOrEmpty(environmentPath))
 			paths.Insert(0, environmentPath);
@@ -314,10 +317,11 @@ public class UnrealEnginePython : ModuleRules
 		foreach (string path in paths)
 		{
 			string actualPath = path;
+			System.Console.WriteLine(actualPath);
 
 			if (IsPathRelative(actualPath))
 			{
-				actualPath = Path.GetFullPath(Path.Combine(ModuleDirectory, actualPath));
+				actualPath = Path.GetFullPath(Path.Combine(Directory.GetParent(Directory.GetParent(ModuleDirectory).ToString()).ToString(), actualPath));
 			}
 
 			string headerFile = Path.Combine(actualPath, "include", "Python.h");
@@ -339,7 +343,7 @@ public class UnrealEnginePython : ModuleRules
 	private string DiscoverLinuxPythonIncludesPath()
 	{
 		List<string> paths = new List<string>(linuxKnownIncludesPaths);
-		paths.Insert(0, Path.Combine(ModuleDirectory, "../../Binaries", "Linux", "include"));
+		paths.Insert(0, Path.Combine(Directory.GetParent(Directory.GetParent(ModuleDirectory).ToString()).ToString(), "ThirdParty", "Linux", "include"));
 		foreach (string path in paths)
 		{
 			string headerFile = Path.Combine(path, "Python.h");
@@ -354,8 +358,8 @@ public class UnrealEnginePython : ModuleRules
 	private string DiscoverLinuxPythonLibsPath()
 	{
 		List<string> paths = new List<string>(linuxKnownLibsPaths);
-		paths.Insert(0, Path.Combine(ModuleDirectory, "../../Binaries", "Linux", "lib"));
-		paths.Insert(0, Path.Combine(ModuleDirectory, "../../Binaries", "Linux", "lib64"));
+		paths.Insert(0, Path.Combine(Directory.GetParent(Directory.GetParent(ModuleDirectory).ToString()).ToString(), "ThirdParty", "Linux", "lib"));
+		paths.Insert(0, Path.Combine(Directory.GetParent(Directory.GetParent(ModuleDirectory).ToString()).ToString(), "ThirdParty", "Linux", "lib64"));
 		foreach (string path in paths)
 		{
 			if (File.Exists(path))
@@ -452,5 +456,40 @@ public class UnrealEnginePython : ModuleRules
 		}
 
 		throw new System.Exception("Invalid Python installation, missing .lib files");
+	}
+
+	public string GetUProjectPath()
+	{
+		return Path.Combine(ModuleDirectory, "../../../..");
+	}
+
+	private string CopyToProjectBinaries(string Filepath, ReadOnlyTargetRules Target)
+	{
+		string BinariesDir = Path.Combine(GetUProjectPath(), "Binaries", Target.Platform.ToString());
+		string Filename = Path.GetFileName(Filepath);
+
+		//convert relative path 
+		string FullBinariesDir = Path.GetFullPath(BinariesDir);
+
+		if (!Directory.Exists(FullBinariesDir))
+		{
+			Directory.CreateDirectory(FullBinariesDir);
+		}
+
+		string FullExistingPath = Path.Combine(FullBinariesDir, Filename);
+		bool ValidFile = false;
+
+		//File exists, check if they're the same
+		if (File.Exists(FullExistingPath))
+		{
+			ValidFile = true;
+		}
+
+		//No valid existing file found, copy new dll
+		if (!ValidFile)
+		{
+			File.Copy(Filepath, Path.Combine(FullBinariesDir, Filename), true);
+		}
+		return FullExistingPath;
 	}
 }
