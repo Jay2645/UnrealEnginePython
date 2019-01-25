@@ -416,6 +416,7 @@ void FPythonSlateDelegate::MenuPyAssetBuilder(FMenuBuilder &Builder, TArray<FAss
 	Py_DECREF(ret);
 }
 
+
 TSharedRef<FExtender> FPythonSlateDelegate::OnExtendContentBrowserMenu(const TArray<FAssetData>& SelectedAssets)
 {
 	TSharedRef<FExtender> Extender(new FExtender());
@@ -426,6 +427,21 @@ TSharedRef<FExtender> FPythonSlateDelegate::OnExtendContentBrowserMenu(const TAr
 }
 
 #endif
+
+
+void FPythonSlateDelegate::SubMenuPyBuilder(FMenuBuilder &Builder)
+{
+	FScopePythonGIL gil;
+
+	PyObject *ret = PyObject_CallFunction(py_callable, (char *)"N", py_ue_new_fmenu_builder(Builder));
+	if (!ret)
+	{
+		unreal_engine_py_log_error();
+		return;
+	}
+	Py_DECREF(ret);
+}
+
 
 TSharedRef<SWidget> FPythonSlateDelegate::OnGenerateWidget(TSharedPtr<FPythonItem> py_item)
 {
@@ -1321,6 +1337,7 @@ PyObject *py_unreal_engine_add_menu_bar_extension(PyObject * self, PyObject * ar
 	if (!PyCallable_Check(py_callable))
 		return PyErr_Format(PyExc_Exception, "argument is not callable");
 
+
 	TSharedRef<FPythonSlateCommands> *commands = new TSharedRef<FPythonSlateCommands>(new FPythonSlateCommands());
 
 	commands->Get().Setup(command_name, py_callable);
@@ -1332,8 +1349,7 @@ PyObject *py_unreal_engine_add_menu_bar_extension(PyObject * self, PyObject * ar
 
 	ExtensibleModule.GetMenuExtensibilityManager()->AddExtender(extender);
 
-	Py_INCREF(Py_None);
-	return Py_None;
+	Py_RETURN_NONE;
 }
 
 PyObject *py_unreal_engine_add_tool_bar_extension(PyObject * self, PyObject * args)

@@ -42,6 +42,7 @@ PyObject *py_unreal_engine_duplicate_asset(PyObject *, PyObject *);
 PyObject *py_unreal_engine_delete_asset(PyObject *, PyObject *);
 
 PyObject *py_unreal_engine_get_long_package_path(PyObject *, PyObject *);
+PyObject *py_unreal_engine_get_long_package_asset_name(PyObject *, PyObject *);
 
 PyObject *py_unreal_engine_create_blueprint(PyObject *, PyObject *);
 PyObject *py_unreal_engine_compile_blueprint(PyObject *, PyObject *);
@@ -95,6 +96,7 @@ PyObject *py_unreal_engine_create_material_instance(PyObject *, PyObject *);
 PyObject *py_unreal_engine_allow_actor_script_execution_in_editor(PyObject *, PyObject *);
 
 PyObject *py_unreal_engine_get_asset_referencers(PyObject *, PyObject *);
+PyObject *py_unreal_engine_get_asset_identifier_referencers(PyObject *, PyObject *);
 PyObject *py_unreal_engine_get_asset_dependencies(PyObject *, PyObject *);
 
 PyObject *py_unreal_engine_open_editor_for_asset(PyObject *, PyObject *);

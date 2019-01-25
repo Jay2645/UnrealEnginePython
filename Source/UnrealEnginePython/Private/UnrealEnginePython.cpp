@@ -37,6 +37,10 @@ const char *ue4_module_options = "linux_global_symbols";
 #include "Runtime/Projects/Public/Interfaces/IPluginManager.h"
 #include "Runtime/Core/Public/HAL/FileManagerGeneric.h"
 
+#if PLATFORM_WINDOWS
+#include <fcntl.h>
+#endif
+
 #if PLATFORM_ANDROID
 #include "Android/AndroidJNI.h"
 #include "Android/AndroidApplication.h"
@@ -115,7 +119,11 @@ void FUnrealEnginePythonModule::UESetupPythonInterpreter(bool verbose)
 	for (int32 i = 0; i < Args.Num(); i++)
 	{
 #if PY_MAJOR_VERSION >= 3
+	#if ENGINE_MINOR_VERSION >= 20
+		argv[i] = (wchar_t *)(TCHAR_TO_WCHAR(*Args[i]));
+	#else
 		argv[i] = (wchar_t *)(*Args[i]);
+	#endif
 #else
 		argv[i] = TCHAR_TO_UTF8(*Args[i]);
 #endif
@@ -378,7 +386,11 @@ void FUnrealEnginePythonModule::StartupModule()
 
 		const int32 MaxPathVarLen = 32768;
 		FString OrigPathVar = FString::ChrN(MaxPathVarLen, TEXT('\0'));
+#if ENGINE_MINOR_VERSION >= 21
+		OrigPathVar = FPlatformMisc::GetEnvironmentVariable(TEXT("PATH"));
+#else
 		FPlatformMisc::GetEnvironmentVariable(TEXT("PATH"), OrigPathVar.GetCharArray().GetData(), MaxPathVarLen);
+#endif
 
 		// Get the current path and remove elements with python in them, we don't want any conflicts
 		const TCHAR* PathDelimiter = FPlatformMisc::GetPathVarDelimiter();
@@ -462,6 +474,22 @@ void FUnrealEnginePythonModule::StartupModule()
 #endif
 
 	Py_Initialize();
+
+#if PLATFORM_WINDOWS
+	// Restore stdio state after Py_Initialize set it to O_BINARY, otherwise
+	// everything that the engine will output is going to be encoded in UTF-16.
+	// The behaviour is described here: https://bugs.python.org/issue16587
+	_setmode(_fileno(stdin), O_TEXT);
+	_setmode(_fileno(stdout), O_TEXT);
+	_setmode(_fileno(stderr), O_TEXT);
+
+	// Also restore the user-requested UTF-8 flag if relevant (behaviour copied
+	// from LaunchEngineLoop.cpp).
+	if (FParse::Param(FCommandLine::Get(), TEXT("UTF8Output")))
+	{
+		FPlatformMisc::SetUTF8Output();
+	}
+#endif
 
 	PyEval_InitThreads();
 
