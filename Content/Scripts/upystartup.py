@@ -69,7 +69,7 @@ def checkPipDirectory():
 			print(cmd.PythonHomePath() + '/get-pip.py')
 
 			print('Installing pip...')
-			cmd.runLogOutput('InstallPip.bat')
+			cmd.runLogOutput(correctPipPath + '/InstallPip.bat')
 
 			#update our stored location
 			configs['pipDirectoryPath'] = correctPipPath
