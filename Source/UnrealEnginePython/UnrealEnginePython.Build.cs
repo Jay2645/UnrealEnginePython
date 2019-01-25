@@ -32,7 +32,7 @@ public class UnrealEnginePython : ModuleRules
     //private string PythonHome = "/usr/local/include/python3.6;/usr/local/lib/libpython3.6.so"
 
     //Swap python versions here
-    private string PythonType = "Python36";
+    private string PythonType = "Python37";
     //private string PythonType = "python27";
 
     private string ThirdPartyPath
@@ -329,13 +329,29 @@ public class UnrealEnginePython : ModuleRules
 
 				System.Console.WriteLine("Using Embedded Python at: " + PythonHome);
 				PublicIncludePaths.Add(PythonHome);
-				string libPath = Path.Combine(PythonHome, "Lib", string.Format("{0}.lib", PythonType.ToLower()));
-
+				string libPath;
+				if (Target.Platform == UnrealTargetPlatform.Win64)
+				{
+					libPath = Path.Combine(PythonHome, "Lib", "Win64", string.Format("{0}.lib", PythonType.ToLower()));
+				}
+				else
+				{
+					libPath = Path.Combine(PythonHome, "Lib", "Win32", string.Format("{0}.lib", PythonType.ToLower()));
+				}
 				System.Console.WriteLine("full lib path: " + libPath);
 				PublicLibraryPaths.Add(Path.GetDirectoryName(libPath));
 				PublicAdditionalLibraries.Add(libPath);
 
-				string dllPath = Path.Combine(BinariesPath, "Win64", string.Format("{0}.dll", PythonType.ToLower()));
+				string dllPath;
+				if (Target.Platform == UnrealTargetPlatform.Win64)
+				{
+					dllPath = Path.Combine(BinariesPath, "Win64", string.Format("{0}.dll", PythonType.ToLower()));
+				}
+				else
+				{
+					dllPath = Path.Combine(BinariesPath, "Win32", string.Format("{0}.dll", PythonType.ToLower()));
+				}
+				System.Console.WriteLine("DLL path: " + dllPath);
 				RuntimeDependencies.Add(dllPath);
 
 				AddRuntimeDependenciesForCopying(Target);
